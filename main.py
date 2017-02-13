@@ -36,80 +36,69 @@ class Handler(webapp2.RequestHandler):
     def render(self, template, **kw):
         self.write(self.render_str(template, **kw))
 
+
+
 class BlogEntry(db.Model):
     title = db.StringProperty(required=True)
     body = db.TextProperty(required=True)
     created = db.DateTimeProperty(auto_now_add=True)
 
+def get_posts(num_limit, num_offset):
+    blog_list = db.GqlQuery("SELECT * FROM BlogEntry ORDER BY created DESC LIMIT %s OFFSET %s;" % (num_limit, num_offset))
+    return blog_list
+
 class MainHandler(Handler):
-    def render_front(self, title="", blog_post = "", error =""):
-        blogs = db.GqlQuery("SELECT * FROM BlogEntry ORDER BY created DESC LIMIT 5;")
+
+    def get(self, title="", blog_post = "", error =""):
+        blog_query = db.GqlQuery("SELECT * FROM BlogEntry ORDER BY created DESC")
+        page_number = 1
+        num_offset = page_number * 5 - 5
+        blogs = get_posts(5, num_offset)
         self.render("front.html", title = title, blog_post = blog_post, error=error, blogs=blogs)
-    def get(self):
-    #    blogs = db.GqlQuery("SELECT * FROM BlogEntry ORDER BY created DESC LIMIT 5;")
-        self.render_front()#("front.html", title = title, blog_post = blog_post, error=error, blogs=blogs)
 
 
-#    def post(self):
-#        title = self.request.get("title")
-#        body = self.request.get("blog_post")
-
-#        if title and body:
-#            blog = BlogEntry (title = title, body = body)
-#            blog.put()
-#            self.redirect("/blog")
-#        else:
-#            error = "We need both a title and a blog post."
-#            self.render_front(title, body, error)
 
 class NewPost(Handler):
+    # handler for /newpost to enter a new blog post
         def render_front(self, title="", blog_post = "", error =""):
-            #blogs = db.GqlQuery("SELECT * FROM BlogEntry ORDER BY created DESC LIMIT 3;")
             self.render("blogentry.html", title = title, blog_post = blog_post, error=error)
+
         def get(self):
             self.render_front()
 
         def post(self):
             title = self.request.get("title")
             body = self.request.get("blog_post")
-
+            #make sure user enters blog title and blog entry otherwise will generate an error
             if title and body:
                 blog = BlogEntry (title = title, body = body)
                 blog.put()
                 blog_post_id = str(blog.key().id())
-                #title = blog_post.title
-                #body = blog_post.body
                 self.redirect("/blog/" +blog_post_id)
             else:
                 error = "We need both a title and a body."
                 self.render_front(title, body, error)
 
-class ViewPostHandler(webapp2.RequestHandler):
+class Redirect(webapp2.RequestHandler):
+    #redirects / to /blog
+    def get(self):
+        self.redirect("blog")
+
+class ViewPostHandler(Handler): #webapp2.RequestHandler):
     def get(self, id):
-        #blog = db.GqlQuery("SELECT * FROM BlogEntry;")
-        #self.response.write(id) #blog.get_by_id(id)) #replace this with some code to handle the request
         blog_post = BlogEntry.get_by_id(int(id))
         title = blog_post.title
         body = blog_post.body
         blog_id = blog_post.key().id()
         if blog_post:
-            #self.render("blogentry.html", title = title, body = body, error="")
-            #store template into a variable
-            t = jinja_env.get_template("singleblog.html")
-            content = t.render(blog_post = blog_post)
-            #t = jinja
-            #render our blog variables with template
-            #response = t.render();
-            #write out response
-            self.response.out.write(content)
-#<div class = "blog-title"><a href ="http://localhost:13080/blog/{{blog_post.key().id()}}">{{title}}</a></div>
-            #self.response.write("<h1>"+ title+"</h1><br>" + body)
+            self.render("singleblog.html", blog_post= blog_post)
         else:
             self.response.write("There is no blog post with that id.")
 
 
 
 app = webapp2.WSGIApplication([
+    ('/', Redirect),
     ('/blog', MainHandler),
     ('/newpost', NewPost),
     webapp2.Route('/blog/<id:\d+>', ViewPostHandler)

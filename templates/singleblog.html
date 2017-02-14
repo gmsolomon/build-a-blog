@@ -3,8 +3,16 @@
 {% block content %}
 
         <div class = "blog">
+            {% if blog_post %}
         <div class = "blog-title"><a href ="http://localhost:13080/blog/{{blog_post.key().id()}}">{{blog_post.title}}</a></div>
             <pre class = "blog-body">{{blog_post.body}}</pre>
+                {% endif %}
+
+
+            {% if error %}
+            <h2 class = "error">{{error}}<h2>
+                {% endif %}
+
         </div>
-        
+
 {% endblock %}

@@ -26,7 +26,7 @@ jinja_env = jinja2.Environment(loader = jinja2.FileSystemLoader(template_dir),
 
 
 class Handler(webapp2.RequestHandler):
-    
+
     def write(self, *a, **kw):
         self.response.out.write(*a, **kw)
 
@@ -98,8 +98,9 @@ class ViewPostHandler(Handler):
         if blog_post:
             self.render("singleblog.html", blog_post= blog_post)
         else:
-            self.response.write("There is no blog post with that id.")
-
+#            self.response.write("There is no blog post with that id.")
+            error = "There is no blog post with that id."
+            self.render("singleblog.html", blog_post = "" , error = error )
 
 
 app = webapp2.WSGIApplication([

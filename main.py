@@ -26,6 +26,7 @@ jinja_env = jinja2.Environment(loader = jinja2.FileSystemLoader(template_dir),
 
 
 class Handler(webapp2.RequestHandler):
+    
     def write(self, *a, **kw):
         self.response.out.write(*a, **kw)
 
@@ -39,15 +40,21 @@ class Handler(webapp2.RequestHandler):
 
 
 class BlogEntry(db.Model):
+    # creats a database for the blog entries
     title = db.StringProperty(required=True)
     body = db.TextProperty(required=True)
     created = db.DateTimeProperty(auto_now_add=True)
 
 def get_posts(num_limit, num_offset):
+    # retrieves the number of posts (num_limit) that the MainHandler has requested
+
     blog_list = db.GqlQuery("SELECT * FROM BlogEntry ORDER BY created DESC LIMIT %s OFFSET %s;" % (num_limit, num_offset))
     return blog_list
 
 class MainHandler(Handler):
+ # displays the blogs main page with the five most recent blog posts
+ # currents set to display only the first page of the blog_post
+ # plan to add pagination at a later date
 
     def get(self, title="", blog_post = "", error =""):
         blog_query = db.GqlQuery("SELECT * FROM BlogEntry ORDER BY created DESC")
@@ -84,12 +91,10 @@ class Redirect(webapp2.RequestHandler):
     def get(self):
         self.redirect("blog")
 
-class ViewPostHandler(Handler): #webapp2.RequestHandler):
+class ViewPostHandler(Handler):
+    # views individual post on its own page user the post entry's id
     def get(self, id):
         blog_post = BlogEntry.get_by_id(int(id))
-        title = blog_post.title
-        body = blog_post.body
-        blog_id = blog_post.key().id()
         if blog_post:
             self.render("singleblog.html", blog_post= blog_post)
         else:
